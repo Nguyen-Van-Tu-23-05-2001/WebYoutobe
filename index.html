@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DuoScreen - CarPlay Multi-Screen Dashboard</title>
+  <link rel="stylesheet" href="css/style.css?v=20261122_4">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+</head>
+<body>
+
+  <!-- ============ WELCOME ONBOARDING MODAL ============ -->
+  <div class="modal-overlay hidden" id="welcomeModal">
+    <div class="modal-box onboarding-modal">
+      <button class="modal-close-btn" id="btnCloseWelcome" style="position: absolute; top: 12px; right: 14px; background: transparent; border: none; color: #94a3b8; font-size: 18px; cursor: pointer;">✕</button>
+      <div class="modal-header-icon">🚗</div>
+      <h2>Chào mừng tài xế mới!</h2>
+      <p class="modal-desc">Thiết lập hồ sơ lái xe của bạn để bắt đầu trải nghiệm.</p>
+      <input type="text" class="modal-input" id="driverNameInput" placeholder="Nhập tên hoặc biệt danh của bạn..." maxlength="20">
+      <div class="avatar-pick-row">
+        <button class="avatar-btn selected" data-avatar="🏎️">🏎️</button>
+        <button class="avatar-btn" data-avatar="🚗">🚗</button>
+        <button class="avatar-btn" data-avatar="🚙">🚙</button>
+        <button class="avatar-btn" data-avatar="⚡">⚡</button>
+        <button class="avatar-btn" data-avatar="🚀">🚀</button>
+        <button class="avatar-btn" data-avatar="🏁">🏁</button>
+      </div>
+      <button class="btn-primary modal-submit-btn" id="btnStartOnboard">Bắt đầu ngay</button>
+    </div>
+  </div>
+
+  <!-- ============ SPEED LIMIT MODAL ============ -->
+  <div class="modal-overlay hidden" id="speedLimitModal">
+    <div class="modal-box">
+      <h3>⚠️ Giới Hạn Tốc Độ Cảnh Báo</h3>
+      <p class="modal-desc">Chọn hoặc điều chỉnh giới hạn tốc độ cảnh báo cho bạn.</p>
+      <div class="speed-preset-grid">
+        <button class="speed-preset-btn" data-limit="50">50</button>
+        <button class="speed-preset-btn active" data-limit="60">60</button>
+        <button class="speed-preset-btn" data-limit="80">80</button>
+        <button class="speed-preset-btn" data-limit="90">90</button>
+        <button class="speed-preset-btn" data-limit="100">100</button>
+        <button class="speed-preset-btn" data-limit="120">120</button>
+      </div>
+      <div class="speed-stepper">
+        <button class="stepper-btn" id="btnLimitMinus">−5</button>
+        <span class="stepper-value" id="stepperLimitValue">60 km/h</span>
+        <button class="stepper-btn" id="btnLimitPlus">+5</button>
+      </div>
+      <button class="btn-primary" id="btnApplyLimit">Áp dụng</button>
+      <button class="btn-ghost" id="btnCloseSpeedModal">Đóng</button>
+    </div>
+  </div>
+
+  <!-- ============ GPS OFFSET MODAL ============ -->
+  <div class="modal-overlay hidden" id="gpsOffsetModal">
+    <div class="modal-box">
+      <h3>📡 Hiệu Chỉnh Độ Lệch GPS</h3>
+      <p class="modal-desc">GPS có thể chậm hơn tốc độ thực tế. Thêm giá trị bù để chính xác hơn.</p>
+      <div class="speed-stepper">
+        <button class="stepper-btn" id="btnOffsetMinus">−1</button>
+        <span class="stepper-value" id="offsetValue">+0 km/h</span>
+        <button class="stepper-btn" id="btnOffsetPlus">+1</button>
+      </div>
+      <button class="btn-primary" id="btnApplyOffset">Áp dụng</button>
+      <button class="btn-ghost" id="btnCloseOffsetModal">Đóng</button>
+    </div>
+  </div>
+
+  <!-- ============ DRIVER PROFILE MODAL ============ -->
+  <div class="modal-overlay hidden" id="profileModal">
+    <div class="modal-box">
+      <h3>🏁 Hồ Sơ Tài Xế</h3>
+      <div class="profile-stats">
+        <div class="stat-item"><span class="stat-label">Quãng đường tích lũy</span><span class="stat-val" id="profileDistance">0 km</span></div>
+        <div class="stat-item"><span class="stat-label">Tốc độ cao nhất</span><span class="stat-val" id="profileMaxSpeed">0 km/h</span></div>
+        <div class="stat-item"><span class="stat-label">Số chuyến đi</span><span class="stat-val" id="profileTrips">0</span></div>
+      </div>
+      <input type="text" class="modal-input" id="profileNameEdit" placeholder="Đổi tên tài xế...">
+      <button class="btn-primary" id="btnSaveProfile">Lưu thay đổi</button>
+      <button class="btn-danger" id="btnResetProfile">Xóa dữ liệu & Đặt lại</button>
+      <button class="btn-ghost" id="btnCloseProfile">Đóng</button>
+    </div>
+  </div>
+
+  <!-- ============ PLAYLIST SAVE MODAL ============ -->
+  <div class="modal-overlay hidden" id="playlistModal">
+    <div class="modal-box">
+      <h3>💾 Lưu vào danh sách phát</h3>
+      <div class="playlist-list">
+        <button class="playlist-item" data-pl="fav">❤️ Bài hát yêu thích<span class="pl-add">+ Thêm</span></button>
+        <button class="playlist-item" data-pl="night">🌙 Nhạc lái xe đêm<span class="pl-add">+ Thêm</span></button>
+      </div>
+      <button class="btn-ghost" id="btnNewPlaylist">+ Tạo danh sách phát mới</button>
+      <button class="btn-ghost" id="btnClosePlaylist">Đóng</button>
+    </div>
+  </div>
+
+  <!-- ================= TOP NAVIGATION BAR ================= -->
+  <header class="top-navbar" id="topNavbar">
+    <div class="nav-left">
+      <div class="pill-group">
+        <button class="nav-btn" data-tab="hub"><span class="nav-icon">🌐</span> HUB</button>
+        <button class="nav-btn" data-tab="map"><span class="nav-icon">📍</span> Map</button>
+        <button class="nav-btn" data-tab="split"><span class="nav-icon">◫</span> Chia</button>
+        <button class="nav-btn active" data-tab="media"><span class="nav-icon">▶</span> Media</button>
+      </div>
+      <div class="layout-group">
+        <button class="layout-btn active" id="btnHorizontal"><span class="nav-icon">▤</span> Ngang</button>
+        <button class="layout-btn" id="btnVertical"><span class="nav-icon">▥</span> Dọc</button>
+      </div>
+    </div>
+    <div class="nav-right">
+      <div class="split-ratio-group">
+        <button class="ratio-btn" data-ratio="35:65" title="Tỷ lệ chuẩn màn hình kép Ford Territory (35% HUD - 65% Media)">🚙 35:65 (Territory)</button>
+        <button class="ratio-btn" data-ratio="50:50">50:50</button>
+        <button class="ratio-btn" data-ratio="40:60">40:60</button>
+        <button class="ratio-btn" data-ratio="30:70">30:70</button>
+        <button class="ratio-btn active" data-ratio="16:9" title="Toàn màn hình Media chuẩn 16:9 cho Ford Territory">⛶ 16:9 Full</button>
+      </div>
+      <button class="profile-btn" id="btnProfile"><span id="profileAvatar">🚙</span> <span id="profileName">Ford Territory</span></button>
+      <button class="swap-btn" id="btnSwap">⇄ Swap</button>
+    </div>
+  </header>
+
+  <!-- ================= MAIN WORKSPACE ================= -->
+  <main class="workspace" id="workspace">
+
+    <!-- ========= LEFT PANEL: HUB DASHBOARD ========= -->
+    <section class="panel left-panel" id="panelLeft" data-order="1">
+
+      <!-- HUB View -->
+      <div class="panel-view" id="viewHub">
+        <!-- Sub-bar -->
+        <div class="hub-subbar">
+          <div class="subbar-left">
+            <button class="chip-btn cyan" id="btnSoundToggle">🔊 <span id="soundLabel">Âm thanh: BẬT</span></button>
+            <button class="chip-btn" id="btnGpsOffset">⚙ Độ lệch GPS <span class="offset-badge hidden" id="offsetBadge">+0</span></button>
+          </div>
+          <button class="chip-btn amber" id="btnSimulate">⚡ Thử</button>
+        </div>
+
+        <div class="hub-content">
+          <!-- Top Row: GPS Status + Speed Limit -->
+          <div class="hub-top-row">
+            <div class="gps-status" id="gpsStatus">
+              <span class="pulse-dot amber"></span>
+              <span id="gpsText">Đang đợi...</span>
+              <span class="offset-pill hidden" id="offsetPill">Bù: +0 km/h</span>
+            </div>
+            <div class="speed-limit-sign" id="speedLimitSign" title="Chạm để đổi giới hạn tốc độ">
+              <div class="limit-label">CHẠM ĐỂ ĐỔI<br><span>Tối đa</span></div>
+              <div class="limit-circle"><span id="limitDisplay">60</span></div>
+            </div>
+          </div>
+
+          <!-- Alert Banner -->
+          <div class="alert-banner" id="alertBanner">
+            <span class="alert-icon">✅</span>
+            <div class="alert-text">
+              <span class="alert-dist" id="alertDist">Đang cập nhật cung đường</span>
+              <span class="alert-msg" id="alertMsg">Vào khu đông dân cư</span>
+            </div>
+          </div>
+
+          <!-- Gear Status -->
+          <div class="gear-status" id="gearStatus">
+            <span class="gear-dot park"></span> PARK • XE ĐANG ĐỖ
+          </div>
+
+          <!-- Car Visualizer -->
+          <div class="car-visual">
+            <div class="car-svg-wrap" id="carGraphic">
+              <svg viewBox="0 0 240 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#0066ff"/><stop offset="60%" stop-color="#00b4d8"/><stop offset="100%" stop-color="#0077b6"/></linearGradient>
+                  <linearGradient id="gg" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#90e0ef"/><stop offset="100%" stop-color="#03045e"/></linearGradient>
+                </defs>
+                <ellipse cx="120" cy="58" rx="80" ry="4" fill="#00e5ff" opacity="0.4"/>
+                <path d="M25 48C30 48 38 48 42 46C48 44 54 38 65 34C78 28 92 18 115 16C145 16 168 22 188 32C205 36 215 42 225 45C232 47 235 50 232 54C230 56 220 57 210 57C200 57 195 50 185 50C175 50 170 57 150 57C120 57 90 57 75 57C65 57 60 50 50 50C40 50 35 57 25 57C15 57 10 54 12 50C14 47 20 48 25 48Z" fill="url(#cg)" filter="drop-shadow(0 2px 6px rgba(0,229,255,0.5))"/>
+                <path d="M85 30C95 22 108 19 125 19C148 19 164 24 175 30L158 31C152 31 138 31 125 31L85 30Z" fill="url(#gg)" stroke="#48cae4" stroke-width="0.8"/>
+                <polygon points="220,44 232,47 228,50 216,48" fill="#fff" filter="drop-shadow(3px 0 4px #00e5ff)"/>
+                <polygon points="12,49 20,48 20,53 13,53" fill="#ff0055" filter="drop-shadow(-2px 0 4px #ff0055)"/>
+                <g transform="translate(182,53)"><circle r="11" fill="#111" stroke="#334155" stroke-width="2"/><circle r="7" fill="#1e293b" stroke="#00e5ff" stroke-width="1"/><circle r="3" fill="#00e5ff"/></g>
+                <g transform="translate(50,53)"><circle r="11" fill="#111" stroke="#334155" stroke-width="2"/><circle r="7" fill="#1e293b" stroke="#00e5ff" stroke-width="1"/><circle r="3" fill="#00e5ff"/></g>
+              </svg>
+            </div>
+            <div class="road-track" id="roadTrack"></div>
+          </div>
+
+          <!-- Speedometer -->
+          <div class="speedometer">
+            <div class="speed-row">
+              <span class="speed-num" id="speedNum">0</span>
+              <span class="speed-unit">KM/H</span>
+            </div>
+            <div class="speed-offset-label hidden" id="speedOffsetLabel">(Đã bù +0 km/h)</div>
+            <div class="speed-bar"><div class="speed-fill" id="speedFill"></div></div>
+            <!-- Overspeed Warning -->
+            <div class="overspeed-pill hidden" id="overspeedPill">⚠️ QUÁ TỐC ĐỘ <span id="overspeedLimit">60</span>!</div>
+          </div>
+
+          <!-- Telemetry -->
+          <div class="telemetry-row">
+            <div class="telem-col"><span class="telem-label">HƯỚNG XE</span><span class="telem-val cyan" id="telemHeading">🧭 BẮC (0°)</span></div>
+            <div class="telem-col"><span class="telem-label">TỐC ĐỘ MAX</span><span class="telem-val amber" id="telemMax">0 km/h</span></div>
+            <div class="telem-col"><span class="telem-label">QUÃNG ĐƯỜNG</span><span class="telem-val green" id="telemDist">0 km</span></div>
+          </div>
+
+          <!-- Bottom Cards: Weather + Clock -->
+          <div class="bottom-cards">
+            <div class="hud-card weather-card">
+              <div class="wc-main">
+                <div class="wc-city">📍 Hà Nội</div>
+                <div class="wc-temp">20°C</div>
+                <div class="wc-desc">Quang đãng</div>
+                <div class="wc-humid">💧 Ẩm 65%</div>
+              </div>
+              <div class="wc-side">
+                <span class="wc-side-label">Thời tiết</span>
+                <div class="wc-sun">☀️</div>
+                <span class="wc-wind">💨 1km/h</span>
+              </div>
+            </div>
+            <div class="hud-card clock-card">
+              <div class="cc-top">
+                <span class="cc-label">🕐 Thời gian</span>
+                <span class="safe-badge">🛡️ An toàn</span>
+              </div>
+              <div class="cc-time" id="liveTime">09:07<span class="cc-sec">:43</span></div>
+              <div class="cc-date" id="liveDate">📅 CN, 22/11/2026</div>
+              <div class="cc-mode">Chế độ: <span class="drive-mode-val">Lái xe</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAP View -->
+      <div class="panel-view hidden" id="viewMap">
+        <!-- Map Type Switcher -->
+        <div class="map-type-bar">
+          <button class="map-type-btn active" id="btnMapWaze">⚠️ Waze Cảnh Báo Giao Thông</button>
+          <button class="map-type-btn" id="btnMapOSM">🗺️ Bản Đồ GPS</button>
+          <button class="map-type-btn" id="btnMapVietMap" title="Mở VietMap Live">🚀 VietMap Live</button>
+        </div>
+
+        <!-- Quick City/Location Selector -->
+        <div class="map-loc-subbar" style="display: flex; align-items: center; justify-content: space-between; padding: 5px 12px; background: #0f172a; border-bottom: 1px solid var(--border-color); font-size: 11px; flex-wrap: wrap; gap: 6px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="color: var(--text-muted); font-size: 11px;">📍 Khu vực ghim:</span>
+            <button class="loc-quick-btn active" id="btnLocBacGiang" data-lat="21.2731" data-lng="106.1946" style="background: rgba(0, 242, 254, 0.15); border: 1px solid var(--cyan-accent); color: var(--cyan-accent); padding: 3px 9px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;">📍 Bắc Giang</button>
+            <button class="loc-quick-btn" id="btnLocHaNoi" data-lat="21.0285" data-lng="105.8542" style="background: #1e293b; border: 1px solid var(--border-light); color: #cbd5e1; padding: 3px 9px; border-radius: 4px; cursor: pointer; font-size: 11px;">📍 Hà Nội</button>
+          </div>
+          <button id="btnForceGPS" title="Quét lại GPS vệ tinh chính xác từ thiết bị" style="background: #2563eb; border: none; color: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;">📡 Quét GPS Vệ Tinh</button>
+        </div>
+
+        <!-- Waze Live Map Iframe -->
+        <div class="waze-container" id="wazeContainer">
+          <iframe id="wazeFrame" src="https://embed.waze.com/vi/iframe?zoom=15&lat=21.2731&lon=106.1946&ct=livemap&pin=1" loading="lazy"></iframe>
+        </div>
+
+        <!-- Leaflet Map Container -->
+        <div class="map-search-bar hidden" id="osmSearchBar">
+          <input type="text" class="map-search-input" placeholder="🔍 Tìm kiếm điểm đến..." id="mapSearchInput">
+          <button class="map-search-btn" id="btnMapSearch">Tìm</button>
+        </div>
+        <div class="map-quick-destinations hidden" id="osmQuickDest">
+          <button class="dest-pill">🏠 Về nhà</button>
+          <button class="dest-pill">🏢 Đi làm</button>
+          <button class="dest-pill">⛽ Trạm xăng</button>
+          <button class="dest-pill">🅿️ Bãi đỗ</button>
+        </div>
+        <div id="mapContainer" class="map-container hidden"></div>
+        <div class="map-controls hidden" id="osmControls">
+          <button class="map-ctrl-btn" id="btnZoomIn">+</button>
+          <button class="map-ctrl-btn" id="btnZoomOut">−</button>
+          <button class="map-ctrl-btn" id="btn3D">3D</button>
+          <button class="map-ctrl-btn" id="btnLocate">📍</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========= DIVIDER ========= -->
+    <div class="divider" id="divider"><div class="divider-handle"></div></div>
+
+    <!-- ========= RIGHT PANEL: MEDIA ========= -->
+    <section class="panel right-panel" id="panelRight" data-order="3">
+      <!-- Media Sub-bar -->
+      <div class="media-subbar">
+        <div class="media-tabs">
+          <button class="media-tab" data-mtab="catalog">🏠 Kho bài</button>
+          <button class="media-tab active" data-mtab="playing">▶ Phát</button>
+          <button class="media-tab" data-mtab="tv">📺 Xem TV</button>
+        </div>
+        <div class="media-search-wrap">
+          <input type="text" class="media-search" id="mediaSearch" placeholder="Tìm bài hát, ca sĩ, link...">
+          <button class="search-mic">🎤</button>
+          <button class="search-submit" id="btnMediaSearch">Tìm</button>
+        </div>
+      </div>
+
+      <!-- Suggestion Pills -->
+      <div class="sugg-bar">
+        <span class="sugg-label">🎵 Gợi ý:</span>
+        <button class="sugg-pill active" data-vid="7_CNPRkVpQg" data-title="NHẠC NGHE TRÊN XE 🎧 MIXSET HOUSE LAK & DEEP HOUSE">Nhạc Trẻ Remix Lái Xe</button>
+        <button class="sugg-pill" data-vid="PUX1YnmGytM" data-title="Nhạc Chill TikTok - Tuyển Tập Lofi Chill Cực Êm Dịu">Lofi Hip Hop Chill</button>
+        <button class="sugg-pill" data-vid="m7Wya6Z-QdM" data-title="Từng Là, Thu Cuối, Có Em Chờ - Nhạc Trẻ Chill Nhẹ Nhàng">Nhạc Chill Nhẹ Nhàng</button>
+        <button class="sugg-pill" data-vid="Yzj-t2OIIVs" data-title="NONSTOP VIỆT MIX BASS CỰC MẠNH - EDM ĐI BÃO TRÊN XE">Nhạc GenZ MUSIC CLUB hay nhất</button>
+        <button class="sugg-pill" data-vid="Bh2lnFf-uFQ" data-title="Những Bản Acoustic Nhẹ Nhàng - Tuyệt Phẩm Guitar & Piano Lái Xe">Nhạc Không Lời Lái Xe</button>
+      </div>
+
+      <!-- PLAYING VIEW -->
+      <div class="media-view" id="viewPlaying">
+        <div class="yt-stage">
+          <div id="ytPlayer"></div>
+          <div class="yt-overlay" id="ytOverlay">
+            <div class="yt-top-info">
+              <div class="yt-channel-icon">▶</div>
+              <div class="yt-title-wrap">
+                <div class="yt-title" id="ytTitle">Nhạc Trẻ Remix Lái Xe 2024 - Deep House Bass Căng</div>
+                <div class="yt-author" id="ytAuthor">YouTube Music</div>
+              </div>
+            </div>
+          </div>
+          <div class="eq-bars" id="eqBars">
+            <span class="eq playing"></span><span class="eq playing"></span><span class="eq playing"></span>
+            <span class="eq playing"></span><span class="eq playing"></span><span class="eq playing"></span>
+          </div>
+          <button class="yt-link-btn" id="btnYtLink">Xem trên 🔴 YouTube</button>
+        </div>
+      </div>
+
+      <!-- CATALOG VIEW -->
+      <div class="media-view hidden" id="viewCatalog">
+        <div class="catalog-tabs">
+          <button class="cat-tab active" id="catTabCurated" data-cat="curated">🔥 Tuyển tập Territory (30 bài)</button>
+          <button class="cat-tab" id="catTabSaved" data-cat="saved">⭐ Kho bài đã lưu (<span id="savedCount">0</span>)</button>
+          <button class="cat-tab" id="catTabHistory" data-cat="history">🕐 Lịch sử nghe (<span id="historyCount">0</span>)</button>
+        </div>
+        <div class="catalog-list" id="catalogList"></div>
+      </div>
+
+      <!-- TV VIEW -->
+      <div class="media-view hidden" id="viewTv">
+        <div class="tv-channels">
+          <button class="tv-ch active" data-ch="vtv1">VTV1 (Thời sự)</button>
+          <button class="tv-ch" data-ch="vtv3">VTV3 (Giải trí)</button>
+          <button class="tv-ch" data-ch="vtv2">VTV2 (Khoa giáo)</button>
+          <button class="tv-ch" data-ch="vtvcantho">VTV Cần Thơ</button>
+        </div>
+        <div class="tv-player">
+          <iframe id="tvFrame" src="https://vtvgo.vn/xem-truc-tuyen-kenh-vtv1-1.html" frameborder="0" allowfullscreen></iframe>
+        </div>
+      </div>
+
+      <!-- Playback Controls -->
+      <div class="playback-bar">
+        <div class="pb-controls">
+          <button class="pb-btn" id="btnPrev" title="Lùi bài">⏮</button>
+          <button class="pb-btn-main" id="btnPlay" title="Phát video">▶</button>
+          <button class="pb-btn" id="btnNext" title="Next bài">⏭</button>
+          <button class="pb-btn small" id="btnReplay" title="Phát lại từ đầu">🔄</button>
+          <button class="pb-btn small" id="btnMute" title="Tắt tiếng">🔊</button>
+          <input type="range" class="vol-slider" id="volSlider" min="0" max="100" value="75">
+        </div>
+        <div class="pb-track-info">
+          <div class="pb-title" id="pbTitle">Nhạc Trẻ Remix Lái Xe 2024 - Deep House Bass Căng</div>
+          <div class="pb-meta"><span id="pbArtist">YouTube Music</span> • <span id="pbDuration">--:--</span></div>
+        </div>
+        <div class="pb-actions">
+          <button class="action-btn" id="btnSave">⭐ Lưu bài</button>
+          <button class="action-btn" id="btnChoose">📋 Chọn bài</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========= BOTTOM TICKER ========= -->
+  <footer class="ticker-bar">
+    <div class="ticker-left">
+      <span class="ticker-dot"></span>
+      <span class="ticker-text" id="tickerText">Đang phát: Nhạc Trẻ Remix Lái Xe 2024 - Deep House Bass Căng</span>
+      <span class="ticker-idx" id="tickerIdx">[1/8]</span>
+    </div>
+    <a class="ticker-link" id="tickerLink" href="javascript:void(0)">🔗 Mở app</a>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/app.js?v=20261122_18"></script>
+</body>
+</html>

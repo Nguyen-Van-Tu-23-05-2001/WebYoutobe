@@ -1,0 +1,12 @@
+{
+  "name": "ford-territory-carplay-hud",
+  "version": "1.0.0",
+  "description": "CarPlay Multi-Screen Dashboard & Infotainment for Ford Territory",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve ."
+  },
+  "keywords": ["carplay", "dashboard", "ford-territory", "hud"],
+  "author": "",
+  "license": "MIT"
+}
