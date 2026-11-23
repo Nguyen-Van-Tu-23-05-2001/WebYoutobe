@@ -255,9 +255,9 @@
           <button id="btnForceGPS" title="Quét lại GPS vệ tinh chính xác từ thiết bị" style="background: #2563eb; border: none; color: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;">📡 Quét GPS Vệ Tinh</button>
         </div>
 
-        <!-- Waze Live Map Iframe -->
+        <!-- Waze Live Map Iframe (Lazy-loaded to save CarPlay GPU & prevent stuttering) -->
         <div class="waze-container" id="wazeContainer">
-          <iframe id="wazeFrame" src="https://embed.waze.com/vi/iframe?zoom=15&lat=21.2731&lon=106.1946&ct=livemap&pin=1" loading="lazy"></iframe>
+          <iframe id="wazeFrame" src="about:blank" data-src="https://embed.waze.com/vi/iframe?zoom=15&lat=21.2731&lon=106.1946&ct=livemap&pin=1" loading="lazy"></iframe>
         </div>
 
         <!-- Leaflet Map Container -->
@@ -350,7 +350,7 @@
           <button class="tv-ch" data-ch="vtvcantho">VTV Cần Thơ</button>
         </div>
         <div class="tv-player">
-          <iframe id="tvFrame" src="https://vtvgo.vn/xem-truc-tuyen-kenh-vtv1-1.html" frameborder="0" allowfullscreen></iframe>
+          <iframe id="tvFrame" src="about:blank" data-src="https://vtvgo.vn/xem-truc-tuyen-kenh-vtv1-1.html" frameborder="0" allowfullscreen loading="lazy"></iframe>
         </div>
       </div>
 
@@ -387,6 +387,6 @@
   </footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="js/app.js?v=20261122_18"></script>
+  <script src="js/app.js?v=20261123_1"></script>
 </body>
 </html>

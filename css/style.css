@@ -45,6 +45,14 @@ body {
   flex-direction: column;
 }
 
+/* CarPlay GPU Hardware Compositing & Stutter Prevention */
+.workspace, .panel, .yt-stage, .tv-player, .top-navbar {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
 .hidden {
   display: none !important;
 }
@@ -53,8 +61,7 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.88);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -525,8 +532,7 @@ body {
   justify-content: space-between;
   padding: 0 14px;
   border-bottom: 1px solid var(--border-color);
-  background: rgba(10, 15, 29, 0.7);
-  backdrop-filter: blur(8px);
+  background: #0a0f1d;
   gap: 8px;
 }
 
@@ -748,12 +754,7 @@ body {
 }
 
 .road-track.moving {
-  animation: moveRoad 0.4s linear infinite;
-}
-
-@keyframes moveRoad {
-  0% { background-position: 0 0; }
-  100% { background-position: -40px 0; }
+  border-top-color: var(--cyan-accent);
 }
 
 /* Speedometer */
@@ -953,8 +954,7 @@ body {
   z-index: 120;
   display: flex;
   gap: 6px;
-  background: rgba(15, 23, 42, 0.9);
-  backdrop-filter: blur(8px);
+  background: #0f172a;
   padding: 4px;
   border-radius: 10px;
   border: 1px solid var(--border-light);
@@ -1012,8 +1012,7 @@ body {
 
 .map-search-input {
   flex: 1;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(8px);
+  background: #0f172a;
   border: 1px solid var(--border-light);
   color: #fff;
   border-radius: 8px;
@@ -1045,8 +1044,7 @@ body {
 }
 
 .dest-pill {
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(6px);
+  background: #0f172a;
   border: 1px solid var(--border-color);
   color: #cbd5e1;
   font-size: 11px;
@@ -1287,13 +1285,16 @@ body {
 
 .eq {
   width: 3px;
-  background: #ff0055;
+  background: #00e5ff;
   border-radius: 2px;
-  height: 4px;
+  height: 18px;
+  transform-origin: bottom;
+  transform: scaleY(0.2);
+  will-change: transform;
 }
 
 .eq.playing {
-  animation: eqJump 0.8s ease infinite alternate;
+  animation: eqJump 0.9s ease infinite alternate;
 }
 
 .eq:nth-child(2) { animation-delay: 0.15s; }
@@ -1303,9 +1304,9 @@ body {
 .eq:nth-child(6) { animation-delay: 0.35s; }
 
 @keyframes eqJump {
-  0% { height: 3px; background: #00e5ff; }
-  50% { height: 15px; background: #ff0077; }
-  100% { height: 7px; background: #ffcc00; }
+  0% { transform: scaleY(0.2); }
+  50% { transform: scaleY(0.95); }
+  100% { transform: scaleY(0.4); }
 }
 
 .yt-link-btn {

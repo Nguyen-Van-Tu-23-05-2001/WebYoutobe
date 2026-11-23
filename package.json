@@ -1,6 +1,7 @@
 {
   "name": "ford-territory-carplay-hud",
   "version": "1.0.0",
+  "type": "module",
   "description": "CarPlay Multi-Screen Dashboard & Infotainment for Ford Territory",
   "main": "index.html",
   "scripts": {

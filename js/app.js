@@ -550,6 +550,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const panelLeft = document.getElementById('panelLeft');
   const panelRight = document.getElementById('panelRight');
   const divider = document.getElementById('divider');
+  const wazeFrame = document.getElementById('wazeFrame');
+  const tvFrame = document.getElementById('tvFrame');
 
   navButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -573,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
         viewMap.classList.remove('hidden');
         restoreSplitRatio();
         if (activeMapType === 'waze') {
-          updateWazeUrl(currentLat, currentLng);
+          updateWazeUrl(currentLat, currentLng, true);
         } else {
           initLeafletMap();
         }
@@ -587,6 +589,9 @@ document.addEventListener('DOMContentLoaded', () => {
           else b.classList.remove('active');
         });
         restoreSplitRatio();
+        if (activeMapType === 'waze' && viewMap && !viewMap.classList.contains('hidden')) {
+          updateWazeUrl(currentLat, currentLng, true);
+        }
       } else if (tab === 'media') {
         currentRatio = '16:9';
         ratioButtons.forEach(b => {
@@ -594,6 +599,12 @@ document.addEventListener('DOMContentLoaded', () => {
           else b.classList.remove('active');
         });
         restoreSplitRatio();
+        // CARPLAY OPTIMIZATION: Unload Waze WebGL map when in Media mode
+        if (wazeFrame && wazeFrame.src && !wazeFrame.src.includes('about:blank')) {
+          wazeFrame.src = 'about:blank';
+          lastWazeLat = null;
+          lastWazeLng = null;
+        }
       }
     });
   });
@@ -608,6 +619,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (b.getAttribute('data-tab') === 'media') b.classList.add('active');
         else b.classList.remove('active');
       });
+      // CARPLAY OPTIMIZATION: Unload Waze map when in 16:9 mode to free GPU
+      if (wazeFrame && wazeFrame.src && !wazeFrame.src.includes('about:blank')) {
+        wazeFrame.src = 'about:blank';
+        lastWazeLat = null;
+        lastWazeLng = null;
+      }
       return;
     }
     panelLeft.style.display = 'flex';
@@ -617,6 +634,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (b.getAttribute('data-tab') === 'split') b.classList.add('active');
       else if (b.getAttribute('data-tab') === 'media') b.classList.remove('active');
     });
+    // CARPLAY OPTIMIZATION: If returning from 16:9 to split and map is visible, reload Waze
+    if (activeMapType === 'waze' && viewMap && !viewMap.classList.contains('hidden')) {
+      if (!wazeFrame.src || wazeFrame.src.includes('about:blank')) {
+        updateWazeUrl(currentLat, currentLng, true);
+      }
+    }
     const [leftVal, rightVal] = currentRatio.split(':').map(Number);
     if (isSwapped) {
       panelLeft.style.flexBasis = `${rightVal}%`;
@@ -862,7 +885,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnMapOSM = document.getElementById('btnMapOSM');
   const btnMapVietMap = document.getElementById('btnMapVietMap');
   const wazeContainer = document.getElementById('wazeContainer');
-  const wazeFrame = document.getElementById('wazeFrame');
   const osmSearchBar = document.getElementById('osmSearchBar');
   const osmQuickDest = document.getElementById('osmQuickDest');
   const mapContainer = document.getElementById('mapContainer');
@@ -875,6 +897,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let lastWazeLng = null;
   function updateWazeUrl(lat, lng, force = false) {
     if (!wazeFrame) return;
+    // CARPLAY OPTIMIZATION: Do not load Waze iframe if left panel is hidden or in 16:9 media fullscreen mode
+    if (!force && (currentRatio === '16:9' || (panelLeft && panelLeft.style.display === 'none'))) return;
     if (!force && lastWazeLat !== null && lastWazeLng !== null) {
       const dist = Math.hypot(lat - lastWazeLat, lng - lastWazeLng);
       if (dist < 0.0005) return;
@@ -1278,6 +1302,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (mtab === 'catalog') {
         viewCatalog.classList.remove('hidden');
         renderCatalog(mediaSearch ? mediaSearch.value.trim() : '');
+        // CARPLAY OPTIMIZATION: Unload background TV video stream
+        if (tvFrame && tvFrame.src && !tvFrame.src.includes('about:blank')) {
+          tvFrame.src = 'about:blank';
+        }
       } else if (mtab === 'playing') {
         viewPlaying.classList.remove('hidden');
         sendYtCommand('playVideo');
@@ -1285,8 +1313,22 @@ document.addEventListener('DOMContentLoaded', () => {
         btnPlay.textContent = '⏸';
         eqBars.querySelectorAll('.eq').forEach(b => b.classList.add('playing'));
         tickerText.textContent = `Đang phát: ${pbTitle.textContent}`;
+        // CARPLAY OPTIMIZATION: Unload background TV video stream
+        if (tvFrame && tvFrame.src && !tvFrame.src.includes('about:blank')) {
+          tvFrame.src = 'about:blank';
+        }
       } else if (mtab === 'tv') {
         viewTv.classList.remove('hidden');
+        // CARPLAY OPTIMIZATION: Pause YouTube video when watching TV
+        sendYtCommand('pauseVideo');
+        isPlaying = false;
+        btnPlay.textContent = '▶';
+        eqBars.querySelectorAll('.eq').forEach(b => b.classList.remove('playing'));
+        // Only load TV stream when TV tab is open
+        if (tvFrame && (!tvFrame.src || tvFrame.src.includes('about:blank'))) {
+          const currentTvSrc = tvFrame.getAttribute('data-src') || 'https://vtvgo.vn/xem-truc-tuyen-kenh-vtv1-1.html';
+          tvFrame.src = currentTvSrc;
+        }
       }
     });
   });
@@ -1899,7 +1941,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Live TV Channel Selector
   const tvChannels = document.querySelectorAll('.tv-ch');
-  const tvFrame = document.getElementById('tvFrame');
   const TV_URLS = {
     vtv1: 'https://vtvgo.vn/xem-truc-tuyen-kenh-vtv1-1.html',
     vtv3: 'https://vtvgo.vn/xem-truc-tuyen-kenh-vtv3-2.html',
@@ -1912,7 +1953,10 @@ document.addEventListener('DOMContentLoaded', () => {
       tvChannels.forEach(c => c.classList.remove('active'));
       ch.classList.add('active');
       const channelKey = ch.getAttribute('data-ch');
-      if (TV_URLS[channelKey]) tvFrame.src = TV_URLS[channelKey];
+      if (TV_URLS[channelKey] && tvFrame) {
+        tvFrame.setAttribute('data-src', TV_URLS[channelKey]);
+        tvFrame.src = TV_URLS[channelKey];
+      }
       playBeep(650, 0.08);
     });
   });
